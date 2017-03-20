@@ -25,16 +25,15 @@
 
 import os
 
-# Some compatibility stuff for supporting python 2.x as well as python 3.x
-def itemslist(dict):
-    try:
-        return dict.iteritems() # python 2.x
-    except AttributeError:
-        return list(dict.items()) # python 3.x
+
+class CollisionError(Exception):
+    pass
+
 
 class UdInsnDef:
     """An x86 instruction definition
     """
+
     def __init__(self, **insnDef):
         self.mnemonic  = insnDef['mnemonic']
         self.prefixes  = insnDef['prefixes']
@@ -76,13 +75,6 @@ class UdOpcodeTable:
     """A single table of instruction definitions, indexed by
        a decode field. 
     """
-
-    class CollisionError(Exception):
-        pass
-
-    class IndexError(Exception):
-        """Invalid Index Error"""
-        pass
 
     @classmethod
     def vendor2idx(cls, v):
@@ -174,10 +166,10 @@ class UdOpcodeTable:
         return self._TableInfo[self._typ]['size']
 
     def entries(self):
-        return itemslist(self._entries)
+        return self._entries.items()
 
     def numEntries(self):
-        return len(self._entries.keys())
+        return len(self._entries)
 
     def label(self):
         return self._TableInfo[self._typ]['label']
@@ -195,14 +187,14 @@ class UdOpcodeTable:
         typ = UdOpcodeTable.getOpcodeTyp(opc)
         idx = UdOpcodeTable.getOpcodeIdx(opc)
         if self._typ != typ or idx in self._entries:
-            raise CollisionError()
+            raise CollisionError
         self._entries[idx] = obj
 
     def lookup(self, opc):
         typ = UdOpcodeTable.getOpcodeTyp(opc)
         idx = UdOpcodeTable.getOpcodeIdx(opc)
         if self._typ != typ:
-            raise UdOpcodeTable.CollisionError("%s <-> %s" % (self._typ, typ))
+            raise CollisionError("%s <-> %s" % (self._typ, typ))
         return self._entries.get(idx, None)
 
     def entryAt(self, index):
@@ -212,13 +204,13 @@ class UdOpcodeTable:
         """
         if index < self.size():
             return self._entries.get(index, None)
-        raise self.IndexError("index out of bounds: %s" % index)
+        raise IndexError("index out of bounds: %s" % index)
 
     def setEntryAt(self, index, obj):
         if index < self.size():
             self._entries[index] = obj
         else:
-            raise self.IndexError("index out of bounds: %s" % index)
+            raise IndexError("index out of bounds: %s" % index)
 
     @classmethod
     def getOpcodeTyp(cls, opc):
@@ -239,7 +231,7 @@ class UdOpcodeTable:
     @classmethod
     def getLabels(cls):
         """Returns a list of all labels"""
-        return [cls._TableInfo[k]['label'] for k in cls._TableInfo.keys()]
+        return [cls._TableInfo[k]['label'] for k in cls._TableInfo]
 
 
 class UdOpcodeTables(object):
@@ -471,8 +463,8 @@ class UdOpcodeTables(object):
         ssemnemonic = insnDef['mnemonic']
         sseopcodes = insnDef['opcodes']
         # remove vex opcode extensions
-        sseopcexts = dict([(e, v) for e, v in itemslist(insnDef['opcexts'])
-                           if not e.startswith('/vex')])
+        sseopcexts = {e: v for e, v in insnDef['opcexts'].items()
+                      if not e.startswith('/vex')}
         # strip out avx operands, preserving relative ordering
         # of remaining operands
         sseoperands = [opr for opr in insnDef['operands']
@@ -495,8 +487,8 @@ class UdOpcodeTables(object):
         vexmnemonic = 'v' + insnDef['mnemonic']
         vexprefixes = insnDef['prefixes']
         vexopcodes  = ['c4']
-        vexopcexts  = dict([(e, insnDef['opcexts'][e])
-                              for e in insnDef['opcexts'] if e != '/sse'])
+        vexopcexts  = {e: insnDef['opcexts'][e]
+                       for e in insnDef['opcexts'] if e != '/sse'}
         vexopcexts['/vex'] = insnDef['opcexts']['/sse'] + '_' + '0f'
         if insnDef['opcodes'][1] == '38' or insnDef['opcodes'][1] == '3a':
             vexopcexts['/vex'] += insnDef['opcodes'][1]
@@ -507,7 +499,7 @@ class UdOpcodeTables(object):
         for o in insnDef['operands']:
             # make the operand size explicit: x
             if o in ('V', 'W', 'H', 'U'):
-                o = o + 'x'
+                o += 'x'
             vexoperands.append(o)
         vexcpuid = [flag for flag in insnDef['cpuid']
                     if not flag.startswith('sse')]

@@ -262,16 +262,16 @@ class UdItabGenerator:
             opr_c = ["O_NONE", "O_NONE", "O_NONE", "O_NONE"]
             pfx_c = []
             opr = insn.operands
-            for i in range(len(opr)):
-                if not (opr[i] in self.OperandDict.keys()):
-                    print("error: invalid operand declaration: %s\n" % opr[i])
-                opr_c[i] = "O_" + opr[i]
+            for i, op in enumerate(opr):
+                if op not in self.OperandDict:
+                    print("error: invalid operand declaration: %s\n" % op)
+                opr_c[i] = "O_" + op
             opr = "%s %s %s %s" % (opr_c[0] + ",", opr_c[1] + ",",
                                    opr_c[2] + ",", opr_c[3])
 
             for p in insn.prefixes:
-                if not (p in self.PrefixDict.keys()):
-                    print("error: invalid prefix specification: %s \n" % pfx)
+                if p not in self.PrefixDict:
+                    print("error: invalid prefix specification: %s \n" % p)
                 pfx_c.append(self.PrefixDict[p])
             if len(insn.prefixes) == 0:
                 pfx_c.append("P_none")
