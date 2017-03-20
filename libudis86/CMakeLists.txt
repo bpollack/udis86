@@ -30,4 +30,5 @@ set (udis86_hdrs
     udint.h
 )
 
-add_library (libudis86 STATIC ${udis86_srcs} ${udis86_hdrs})
+add_library (libudis86 SHARED ${udis86_srcs} ${udis86_hdrs})
+add_library (libudis86a STATIC ${udis86_srcs} ${udis86_hdrs})

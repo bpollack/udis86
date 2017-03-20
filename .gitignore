@@ -50,3 +50,5 @@ CMakeFiles
 *.exe
 *.exe.manifest
 *.lib
+*.dll
+*.dll.manifest
