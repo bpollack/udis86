@@ -72,3 +72,7 @@ _ReSharper*/
 *.tar.gz
 tests/bufoverrun
 tests/symresolve
+
+#ignore CMake-related stuff
+CMakeCache.txt
+CMakeFiles
