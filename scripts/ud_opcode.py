@@ -52,7 +52,6 @@ class UdInsnDef:
         """Lookup prefix (if any, None otherwise), by name"""
         return True if pfx in self.prefixes else None
 
-
     @property
     def vendor(self):
         return self._opcexts.get('/vendor', None)
@@ -87,9 +86,9 @@ class UdOpcodeTable:
 
     @classmethod
     def vendor2idx(cls, v):
-        return (0 if v == 'amd' 
-                  else (1 if v == 'intel'
-                          else 2))
+        return (0 if v == 'amd'
+                else (1 if v == 'intel'
+                      else 2))
 
     @classmethod
     def vex2idx(cls, v):
@@ -166,12 +165,10 @@ class UdOpcodeTable:
         '/vexl'     : { 'label' : 'UD_TAB__OPC_VEX_L',   'size' : 2 },
     }
 
-
     def __init__(self, typ):
         assert typ in self._TableInfo
-        self._typ     = typ
+        self._typ = typ
         self._entries = {}
-
 
     def size(self):
         return self._TableInfo[self._typ]['size']
@@ -191,10 +188,8 @@ class UdOpcodeTable:
     def meta(self):
         return self._typ
 
-
     def __str__(self):
         return "table-%s" % self._typ
-
 
     def add(self, opc, obj):
         typ = UdOpcodeTable.getOpcodeTyp(opc)
@@ -203,7 +198,6 @@ class UdOpcodeTable:
             raise CollisionError()
         self._entries[idx] = obj
 
-
     def lookup(self, opc):
         typ = UdOpcodeTable.getOpcodeTyp(opc)
         idx = UdOpcodeTable.getOpcodeIdx(opc)
@@ -211,7 +205,6 @@ class UdOpcodeTable:
             raise UdOpcodeTable.CollisionError("%s <-> %s" % (self._typ, typ))
         return self._entries.get(idx, None)
 
-    
     def entryAt(self, index):
         """Returns the entry at a given index of the table,
            None if there is none. Raises an exception if the
@@ -234,7 +227,6 @@ class UdOpcodeTable:
         else:
             return 'opctbl'
 
-
     @classmethod
     def getOpcodeIdx(cls, opc):
         if opc.startswith('/'):
@@ -243,7 +235,6 @@ class UdOpcodeTable:
         else:
             # plain opctbl opcode
             return int(opc, 16)
-
 
     @classmethod
     def getLabels(cls):
@@ -282,7 +273,7 @@ class UdOpcodeTables(object):
            to walk, the object at the leaf otherwise.
         """
         opc = opcodes[0]
-        e   = tbl.lookup(opc)
+        e = tbl.lookup(opc)
         if e is None:
             return None
         elif isinstance(e, UdOpcodeTable) and len(opcodes[1:]):
@@ -295,7 +286,7 @@ class UdOpcodeTables(object):
            needed.
         """
         opc = opcodes[0]
-        e   =  tbl.lookup(opc)
+        e = tbl.lookup(opc)
         if e is None:
             tbl.add(opc, self.mkTrie(opcodes[1:], obj))
         else:
@@ -304,16 +295,16 @@ class UdOpcodeTables(object):
             self.map(e, opcodes[1:], obj)
 
     def __init__(self, xml):
-        self._tables    = []
-        self._insns     = []
+        self._tables = []
+        self._insns = []
         self._mnemonics = {}
 
         # The root table is always a 256 entry opctbl, indexed
         # by a plain opcode byte
-        self.root       = self.newTable('opctbl')
+        self.root = self.newTable('opctbl')
 
         if os.getenv("UD_OPCODE_DEBUG"):
-            self._logFh     = open("opcodeTables.log", "w")
+            self._logFh = open("opcodeTables.log", "w")
 
         # add an invalid instruction entry without any mapping
         # in the opcode tables.
@@ -333,7 +324,6 @@ class UdOpcodeTables(object):
         if os.getenv("UD_OPCODE_DEBUG"):
             self._logFh.write(s + "\n")
 
-
     def mergeSSENONE(self):
         """Merge sse tables with only one entry for /sse=none
         """
@@ -345,6 +335,7 @@ class UdOpcodeTables(object):
                         if sse:
                             table.setEntryAt(k, sse)
         uniqTables = {}
+
         def genTableList(tbl):
             if tbl not in uniqTables:
                 self._tables.append(tbl)
@@ -352,9 +343,9 @@ class UdOpcodeTables(object):
             for k, e in tbl.entries():
                 if isinstance(e, UdOpcodeTable):
                     genTableList(e)
+
         self._tables = []
         genTableList(self.root)
-                
 
     def patchAvx2byte(self):
         # create avx tables
@@ -370,7 +361,6 @@ class UdOpcodeTables(object):
                     vex = pp + '_' + m
                 table = self.walk(self.root, ('c4', '/vex=' + vex))
                 self.map(self.root, ('c5', '/vex=' + vex), table)
-
 
     def addInsn(self, **insnDef):
 
@@ -409,14 +399,13 @@ class UdOpcodeTables(object):
         self._insns.append(insn)
         # add to lookup by mnemonic structure
         if insn.mnemonic not in self._mnemonics:
-            self._mnemonics[insn.mnemonic] = [ insn ]
+            self._mnemonics[insn.mnemonic] = [insn]
         else:
             self._mnemonics[insn.mnemonic].append(insn)
 
-
     def addInsnDef(self, insnDef):
-        opcodes  = []
-        opcexts  = {}
+        opcodes = []
+        opcexts = {}
 
         # pack plain opcodes first, and collect opcode
         # extensions
@@ -454,7 +443,7 @@ class UdOpcodeTables(object):
             # Construct a long-form definition of the avx instruction
             opcodes.insert(0, 'c4')
         elif (opcodes[0] == '0f' and opcodes[1] != '0f' and
-            '/sse' not in opcexts):
+                      '/sse' not in opcexts):
             # Make all 2-byte opcode form isntructions play nice with sse
             # opcode maps.
             opcexts['/sse'] = 'none'
@@ -471,7 +460,6 @@ class UdOpcodeTables(object):
            operands = insnDef['operands'],
            cpuid    = insnDef['cpuid'])
 
-
     def addSSE2AVXInsn(self, **insnDef):
         """Add an instruction definition containing an avx cpuid bit, but
            declared in its legacy SSE form. The function splits the
@@ -481,20 +469,20 @@ class UdOpcodeTables(object):
 
         # SSE
         ssemnemonic = insnDef['mnemonic']
-        sseopcodes  = insnDef['opcodes']
+        sseopcodes = insnDef['opcodes']
         # remove vex opcode extensions
-        sseopcexts  = dict([(e, v) for e, v in itemslist(insnDef['opcexts'])
-                                  if not e.startswith('/vex')])
+        sseopcexts = dict([(e, v) for e, v in itemslist(insnDef['opcexts'])
+                           if not e.startswith('/vex')])
         # strip out avx operands, preserving relative ordering
         # of remaining operands
         sseoperands = [opr for opr in insnDef['operands']
-                        if opr not in ('H', 'L')]
+                       if opr not in ('H', 'L')]
         # strip out avx prefixes
         sseprefixes = [pfx for pfx in insnDef['prefixes']
-                        if not pfx.startswith('vex')]
+                       if not pfx.startswith('vex')]
         # strip out avx bits from cpuid
-        ssecpuid    = [flag for flag in insnDef['cpuid']
-                        if not flag.startswith('avx')]
+        ssecpuid = [flag for flag in insnDef['cpuid']
+                    if not flag.startswith('avx')]
 
         self.addInsn(mnemonic = ssemnemonic,
                      prefixes = sseprefixes,
@@ -521,8 +509,8 @@ class UdOpcodeTables(object):
             if o in ('V', 'W', 'H', 'U'):
                 o = o + 'x'
             vexoperands.append(o)
-        vexcpuid    = [flag for flag in insnDef['cpuid']
-                        if not flag.startswith('sse')]
+        vexcpuid = [flag for flag in insnDef['cpuid']
+                    if not flag.startswith('sse')]
 
         self.addInsn(mnemonic = vexmnemonic,
                      prefixes = vexprefixes,
@@ -535,7 +523,6 @@ class UdOpcodeTables(object):
         """Returns a list of all instructions in the collection"""
         return self._insns
 
-
     def getTableList(self):
         """Returns a list of all tables in the collection"""
         return self._tables
@@ -543,7 +530,6 @@ class UdOpcodeTables(object):
     def getMnemonicsList(self):
         """Returns a sorted list of mnemonics"""
         return sorted(self._mnemonics.keys())
-
 
     def pprint(self):
         def printWalk(tbl, indent=""):
@@ -554,8 +540,8 @@ class UdOpcodeTables(object):
                     printWalk(e, indent + "    |")
                 elif isinstance(e, UdInsnDef):
                     self.log("%s    |-<%02x> %s" % (indent, k, e))
-        printWalk(self.root)
 
+        printWalk(self.root)
 
     def printStats(self):
         tables = self.getTableList()
@@ -574,7 +560,6 @@ class UdOpcodeTables(object):
 
         self.pprint()
 
-
     @staticmethod
     def parseOptableXML(xml):
         """Parse udis86 optable.xml file and return list of
@@ -584,9 +569,9 @@ class UdOpcodeTables(object):
 
         xmlDoc = minidom.parse(xml)
         tlNode = xmlDoc.firstChild
-        insns  = []
+        insns = []
 
-        while tlNode and tlNode.localName != "x86optable": 
+        while tlNode and tlNode.localName != "x86optable":
             tlNode = tlNode.nextSibling
 
         for insnNode in tlNode.childNodes:
@@ -605,7 +590,7 @@ class UdOpcodeTables(object):
 
             for node in insnNode.childNodes:
                 if node.localName == 'def':
-                    insnDef = { 'pfx' : [] }
+                    insnDef = {'pfx': []}
                     for node in node.childNodes:
                         if not node.localName:
                             continue
